@@ -1,23 +1,19 @@
-// AuctionContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { AuctionABI } from './abi';
-import { connectMetamask } from './connectMetamask';
+import { EthtoWETHABI } from './abi'; // Ensure this points to the correct ABI file
+import { connectMetamask } from './connectMetamask'; // Ensure this utility connects MetaMask properly
 
-const AuctionContext = createContext();
+const EthtoWETHContext = createContext();
 
-export const AuctionProvider = ({ children }) => {
+export const EthtoWETHProvider = ({ children }) => {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
-  const [auctionContract, setAuctionContract] = useState(null);
-  const [highestBid, setHighestBid] = useState(0);
-  const [highestBidder, setHighestBidder] = useState('');
-  const [isOwner, setIsOwner] = useState(false);
-  const [ended, setEnded] = useState(false);
+  const [ethToWETHContract, setEthToWETHContract] = useState(null);
+  const [wethBalance, setWethBalance] = useState(0);
+  const [ethBalance, setEthBalance] = useState(0);
   const [account, setAccount] = useState('');
-  const [balance, setBalance] = useState('');
 
-  const contractAddress = '0x7a8c8ab75cc2855b3ea72b44fd502da0c602b598';
+  const contractAddress = '0xE39C855Ef6C10c92DAbB5a21c8B2c5FFdC6dD22d'; // Replace with your WETH contract address
 
   useEffect(() => {
     const init = async () => {
@@ -25,23 +21,16 @@ export const AuctionProvider = ({ children }) => {
         const { address, balance } = await connectMetamask();
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
-        const auctionContract = new ethers.Contract(contractAddress, AuctionABI, signer);
+        const ethToWETHContract = new ethers.Contract(contractAddress, EthtoWETHABI, signer);
 
         setProvider(provider);
         setSigner(signer);
         setAccount(address);
-        setBalance(ethers.utils.formatEther(balance));
-        setAuctionContract(auctionContract);
+        setEthBalance(ethers.utils.formatEther(balance));
+        setEthToWETHContract(ethToWETHContract);
 
-        const highestBid = await auctionContract.highestBid();
-        const highestBidder = await auctionContract.highestBidder();
-        const owner = await auctionContract.owner();
-        const ended = await auctionContract.ended();
-
-        setHighestBid(ethers.utils.formatEther(highestBid));
-        setHighestBidder(highestBidder);
-        setEnded(ended);
-        setIsOwner(address === owner);
+        const wethBalance = await ethToWETHContract.balanceOf(address);
+        setWethBalance(ethers.utils.formatEther(wethBalance));
       } catch (error) {
         console.error('Error initializing contract:', error);
       }
@@ -50,18 +39,40 @@ export const AuctionProvider = ({ children }) => {
     init();
   }, [contractAddress]);
 
-  const placeBid = async (bidAmount) => {
-    if (auctionContract) {
-      const tx = await auctionContract.bid({ value: ethers.utils.parseEther(bidAmount) });
-      await tx.wait();
+  const convertETHToWETH = async (ethAmount) => {
+    try {
+      if (ethToWETHContract) {
+        const tx = await ethToWETHContract.convertWETH({ value: ethers.utils.parseEther(ethAmount) });
+        await tx.wait();
+        const updatedWethBalance = await ethToWETHContract.balanceOf(account);
+        setWethBalance(ethers.utils.formatEther(updatedWethBalance));
+      }
+    } catch (error) {
+      console.error('Error converting ETH to WETH:', error);
+    }
+  };
+  
+  const withdrawWETH = async (wethAmount) => {
+    try {
+      if (ethToWETHContract) {
+        const tx = await ethToWETHContract.withdrawWETH(ethers.utils.parseEther(wethAmount));
+        await tx.wait();
+        const updatedWethBalance = await ethToWETHContract.balanceOf(account);
+        setWethBalance(ethers.utils.formatEther(updatedWethBalance));
+  
+        const updatedEthBalance = await provider.getBalance(account);
+        setEthBalance(ethers.utils.formatEther(updatedEthBalance));
+      }
+    } catch (error) {
+      console.error('Error withdrawing WETH:', error);
     }
   };
 
   return (
-    <AuctionContext.Provider value={{ placeBid, highestBid, highestBidder, isOwner, ended, account, balance }}>
+    <EthtoWETHContext.Provider value={{ convertETHToWETH, withdrawWETH, wethBalance, ethBalance, account, connectWallet: connectMetamask }}>
       {children}
-    </AuctionContext.Provider>
+    </EthtoWETHContext.Provider>
   );
 };
 
-export const useAuction = () => useContext(AuctionContext);
+export const useEthtoWETH = () => useContext(EthtoWETHContext);
