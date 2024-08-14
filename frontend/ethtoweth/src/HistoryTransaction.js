@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 
-const API_KEY = 'HPVVQ73CSS3H2PKCJ9S98PYHR7SJXH8S7Q'; // Replace with your Etherscan API key
+const API_KEY = process.env.ETHERSCAN_API_KEY; // Replace with your Etherscan API key
 const address = '0xE39C855Ef6C10c92DAbB5a21c8B2c5FFdC6dD22d'; // Replace with the desired Ethereum address
 
 const fetchTransactionDetails = async () => {
