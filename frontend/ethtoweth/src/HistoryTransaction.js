@@ -34,3 +34,4 @@ const fetchTransactionDetails = async () => {
 };
 
 export default fetchTransactionDetails;
+
