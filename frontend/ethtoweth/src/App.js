@@ -75,7 +75,7 @@ function App() {
                   <div key={index} className="transaction-item">
                     <p><strong>Method:</strong> {tx.method}</p>
                     <p><strong>From:</strong> {tx.fromAddress}</p>
-                    <p><strong>Value:</strong> {tx.value} ETH</p>
+                    <p><strong>Value:</strong> {tx.value} WEI</p>
                     <p><strong>Date:</strong> {tx.timestamp}</p>
                   </div>
                 ))
